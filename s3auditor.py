@@ -31,17 +31,17 @@ def audit(args):
     """
     s3 = get_s3_client()
 
-    print("Scanning S3 buckets for public access...\n")
+    print("Scanning S3 buckets for settings that allow public access...\n")
     buckets = get_public_buckets(s3, args.region)
     if not buckets:
         print("No vulnerable buckets detected! :)")
         return
 
-    print("Vulnerable buckets:\n")
+    print(len(buckets), "vulnerable buckets:")
     pprint(buckets)
 
     if args.auto_configure:
-        print("Automatically reconfiguring S3 buckets to block public access...\n")
+        print("Automatically reconfiguring S3 buckets to block public access...")
         auto_configure_s3(s3, buckets)
 
 
@@ -124,6 +124,9 @@ def auto_configure_s3(s3, buckets):
         "RestrictPublicBuckets": True
     }
 
+    total = len(buckets)
+    success = 0
+
     for b in buckets:
         name = b["name"]
         s3.put_public_access_block(
@@ -132,8 +135,11 @@ def auto_configure_s3(s3, buckets):
         updated_config = s3.get_public_access_block(Bucket=name)['PublicAccessBlockConfiguration']
         if updated_config == public_access_block_config:
             print("[Success] {}, {}.".format(name, b["region"]))
+            success += 1
         else:
             print("[FAILURE] {}, {}.".format(name, b["region"]))
+
+    print("\n{} of {} vulnerable buckets reconfigured.".format(success, total))
 
 
 if __name__ == '__main__':
