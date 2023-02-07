@@ -10,8 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Enumerate and automatically secure AWS S3 buckets with public access."
     )
-    parser.add_argument('-r', '--region', type=str,
-                        help="AWS region, default='*'")
+    parser.add_argument('-r', '--region', type=str, help="AWS region, default='*'")
     parser.add_argument('--auto-configure', default=False, action="store_true",
                         help="Automatically reconfigure S3 buckets, default=False")
     args = parser.parse_args()
@@ -19,8 +18,8 @@ def parse_args():
 
 
 def pprint(arr):
-    for e in arr:
-        print(e)
+    for el in arr:
+        print(el)
     print("\n")
 
 
@@ -49,10 +48,8 @@ def get_s3_client():
     """
     Gets and returns S3 client using AWS SDK boto3.
     """
-    aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID') or input(
-        "Enter AWS access key ID: ")
-    aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY') or input(
-        "Enter AWS secret access key: ")
+    aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID') or input("Enter AWS access key ID: ")
+    aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY') or input("Enter AWS secret access key: ")
 
     s3 = boto3.client(
         's3',
@@ -71,7 +68,6 @@ def get_public_buckets(s3, region):
 
     for b in buckets:
         name = b["Name"]
-
         try:
             location = get_bucket_location(s3, name)
             if region and region != location:
@@ -85,7 +81,7 @@ def get_public_buckets(s3, region):
                         "region": location,
                     }
                 )
-        except:
+        except Exception:
             print("Unable to get bucket access setting for bucket {}".format(name))
             pass  # don't exit out the program if we have trouble with one bucket
 
@@ -96,10 +92,9 @@ def get_bucket_location(s3, bucket):
     """
     Returns the location of a given S3 bucket.
     """
-    l = s3.get_bucket_location(Bucket=bucket)
-    l.pop('ResponseMetadata')
-    # If `='LocationConstraint' is None, it defaults to 'us-east-1'
-    location = l['LocationConstraint'] or "us-east-1"
+    loc = s3.get_bucket_location(Bucket=bucket)
+    loc.pop('ResponseMetadata')
+    location = loc['LocationConstraint'] or "us-east-1"  # If 'LocationConstraint' is None, it defaults to 'us-east-1'
     return location
 
 
@@ -129,8 +124,7 @@ def auto_configure_s3(s3, buckets):
 
     for b in buckets:
         name = b["name"]
-        s3.put_public_access_block(
-            Bucket=name, PublicAccessBlockConfiguration=public_access_block_config)
+        s3.put_public_access_block(Bucket=name, PublicAccessBlockConfiguration=public_access_block_config)
 
         updated_config = s3.get_public_access_block(Bucket=name)['PublicAccessBlockConfiguration']
         if updated_config == public_access_block_config:
